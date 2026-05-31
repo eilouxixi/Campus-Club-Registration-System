@@ -11,7 +11,7 @@ interface RegisterModalProps {
 
 interface RegisterForm {
   student_id: string
-  class_name: string
+  name: string
   contact: string
 }
 
@@ -68,18 +68,18 @@ const RegisterModal = ({ open, activityId, activityTitle, onClose, onSuccess }: 
           <Input placeholder="如：212406001" style={{ borderRadius: 12 }} />
         </Form.Item>
         <Form.Item
-          name="class_name"
-          label="班级"
-          rules={[{ required: true, message: '请输入班级' }]}
+          name="name"
+          label="姓名"
+          rules={[{ required: true, message: '请输入姓名' }]}
         >
-          <Input placeholder="例：软件工程2301" style={{ borderRadius: 12 }} />
+          <Input placeholder="请输入你的姓名" style={{ borderRadius: 12 }} />
         </Form.Item>
         <Form.Item
           name="contact"
-          label="联系方式"
-          rules={[{ required: true, message: '请输入联系方式' }]}
+          label="联系电话"
+          rules={[{ required: true, message: '请输入联系电话' }]}
         >
-          <Input placeholder="手机号或QQ号" style={{ borderRadius: 12 }} />
+          <Input placeholder="手机号" style={{ borderRadius: 12 }} />
         </Form.Item>
         <Form.Item style={{ marginTop: 32 }}>
           <Space style={{ width: '100%', justifyContent: 'center' }}>

@@ -14,7 +14,7 @@ from utils import get_current_user
 router = APIRouter()
 
 
-@router.get("/api/activities", response_model=dict)
+@router.get("/api/activities")
 def get_activities(
     status: Optional[str] = None,
     page: int = Query(1, ge=1),
@@ -28,11 +28,14 @@ def get_activities(
     total = query.count()
     activities = query.offset((page - 1) * page_size).limit(page_size).all()
 
+    # 转换为 Pydantic 模型列表
+    activity_list = [ActivityResponse.from_orm(act) for act in activities]
+
     return {
         "total": total,
         "page": page,
         "page_size": page_size,
-        "list": activities
+        "list": activity_list
     }
 
 
@@ -134,7 +137,7 @@ def register_for_activity(
         user_id=current_user.id,
         activity_id=activity_id,
         student_id=reg_data.student_id,
-        class_name=reg_data.class_name,
+        class_name=reg_data.name,
         contact=reg_data.contact,
         status=RegistrationStatus.registered
     )
@@ -170,6 +173,30 @@ def cancel_registration(
     db.commit()
 
     return {"message": "取消报名成功"}
+
+
+@router.delete("/api/activities/{activity_id}")
+def delete_activity(
+    activity_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
+    
+    if not activity:
+        raise HTTPException(status_code=404, detail="活动不存在")
+    
+    if activity.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="无权删除该活动")
+    
+    db.query(Registration).filter(Registration.activity_id == activity_id).delete()
+    
+    db.query(ActivityLocation).filter(ActivityLocation.activity_id == activity_id).delete()
+    
+    db.delete(activity)
+    db.commit()
+    
+    return {"message": "活动删除成功"}
 
 
 @router.get("/api/my-activities", response_model=List[ActivityResponse])

@@ -93,9 +93,8 @@ class ActivityResponse(BaseModel):
 
 
 class RegistrationCreate(BaseModel):
-    activity_id: int
     student_id: str
-    class_name: str
+    name: str
     contact: str
 
 

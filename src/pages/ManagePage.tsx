@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Card, Form, Input, DatePicker, InputNumber, Button, Typography, Space, Tag, message, Modal, Spin, Empty, Row, Col, Statistic } from 'antd'
-import { PlusOutlined, TeamOutlined, CalendarOutlined, RocketOutlined, MinusCircleOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons'
+import { Card, Form, Input, DatePicker, InputNumber, Button, Typography, Space, Tag, message, Modal, Spin, Empty, Row, Col, Statistic, Popconfirm } from 'antd'
+import { PlusOutlined, TeamOutlined, CalendarOutlined, RocketOutlined, MinusCircleOutlined, CheckCircleOutlined, ClockCircleOutlined, DeleteOutlined } from '@ant-design/icons'
 import request from '../utils/request'
 
 const { Title, Text } = Typography
@@ -45,8 +45,8 @@ const ManagePage = () => {
   const fetchMyActivities = async () => {
     setLoading(true)
     try {
-      const res = await request.get('/api/my-activities')
-      setActivities(res.data || [])
+      const activitiesData = await request.get('/api/my-activities')
+      setActivities(activitiesData || [])
     } catch (err) {
       console.error(err)
     } finally {
@@ -129,12 +129,22 @@ const ManagePage = () => {
     setRegistrationsLoading(true)
     setModalOpen(true)
     try {
-      const res = await request.get(`/api/my-activities/${activity.id}/registrations`)
-      setRegistrations(res.data || [])
+      const registrationsData = await request.get(`/api/my-activities/${activity.id}/registrations`)
+      setRegistrations(registrationsData || [])
     } catch (err: any) {
       message.error(err.response?.data?.detail || '获取报名名单失败')
     } finally {
       setRegistrationsLoading(false)
+    }
+  }
+
+  const handleDeleteActivity = async (activityId: number) => {
+    try {
+      await request.delete(`/api/activities/${activityId}`)
+      message.success('删除活动成功')
+      fetchMyActivities()
+    } catch (err: any) {
+      message.error(err.response?.data?.detail || '删除失败')
     }
   }
 
@@ -504,18 +514,36 @@ const ManagePage = () => {
                           {activity.current_participants} / {activity.volunteer_count} 人
                         </Text>
                       </Space>
-                      <Button
-                        type="primary"
-                        ghost
-                        onClick={() => handleViewRegistrations(activity)}
-                        style={{
-                          borderRadius: 10,
-                          borderColor: '#667eea',
-                          color: '#667eea',
-                        }}
-                      >
-                        查看名单
-                      </Button>
+                      <Space>
+                        <Button
+                          type="primary"
+                          ghost
+                          onClick={() => handleViewRegistrations(activity)}
+                          style={{
+                            borderRadius: 10,
+                            borderColor: '#667eea',
+                            color: '#667eea',
+                          }}
+                        >
+                          查看名单
+                        </Button>
+                        <Popconfirm
+                          title="确定要删除这个活动吗？"
+                          description="删除后无法恢复，相关报名记录也会被删除"
+                          onConfirm={() => handleDeleteActivity(activity.id)}
+                          okText="确定删除"
+                          cancelText="取消"
+                          okButtonProps={{ danger: true }}
+                        >
+                          <Button
+                            danger
+                            icon={<DeleteOutlined />}
+                            style={{ borderRadius: 10 }}
+                          >
+                            删除
+                          </Button>
+                        </Popconfirm>
+                      </Space>
                     </div>
                   </div>
                 </Card>

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Card, Row, Col, Typography, Button, Tag, Space, message, Modal, Descriptions, Spin, Empty, Progress, Statistic } from 'antd'
+import { Card, Row, Col, Typography, Button, Tag, Space, message, Modal, Descriptions, Spin, Empty, Progress, Statistic, Form, Input } from 'antd'
 import { CalendarOutlined, EnvironmentOutlined, RocketOutlined, SearchOutlined, HeartOutlined, TeamOutlined, ClockCircleOutlined } from '@ant-design/icons'
 import request from '../utils/request'
+import RegisterModal from '../components/RegisterModal'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -28,12 +29,14 @@ const ExplorePage = () => {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState<number | null>(null)
+  const [registerModalOpen, setRegisterModalOpen] = useState(false)
+  const [registerActivityId, setRegisterActivityId] = useState<number | null>(null)
 
   const fetchActivities = async () => {
     setLoading(true)
     try {
       const res = await request.get('/api/activities', { params: { status: 'open' } })
-      setActivities(res.data?.list || [])
+      setActivities(res.list || [])
     } catch (err) {
       console.error(err)
     } finally {
@@ -46,26 +49,45 @@ const ExplorePage = () => {
   }, [])
 
   const handleViewDetail = async (activityId: number) => {
+    console.log('点击查看详情, activityId:', activityId)
     setDetailLoading(true)
     try {
-      const res = await request.get(`/api/activities/${activityId}`)
-      setSelectedActivity(res.data)
+      const activityData = await request.get(`/api/activities/${activityId}`)
+      console.log('获取活动详情成功:', activityData)
+      setSelectedActivity(activityData)
     } catch (err) {
-      console.error(err)
+      console.error('获取活动详情失败:', err)
     } finally {
       setDetailLoading(false)
     }
   }
 
   const handleRegister = async (activityId: number) => {
-    setActionLoading(activityId)
+    setRegisterModalOpen(true)
+    setRegisterActivityId(activityId)
+  }
+
+  const handleRegisterSubmit = async (values: any) => {
+    setActionLoading(registerActivityId)
     try {
-      await request.post(`/api/activities/${activityId}/register`)
+      await request.post(`/api/activities/${registerActivityId}/register`, {
+        student_id: values.student_id,
+        name: values.name,
+        contact: values.contact
+      })
       message.success('🎉 报名成功！欢迎参加本次活动')
-      setSelectedActivity(null)
+      setRegisterModalOpen(false)
+      setRegisterActivityId(null)
       fetchActivities()
     } catch (err: any) {
-      message.error(err.response?.data?.detail || '报名失败')
+      const detail = err.response?.data?.detail
+      if (detail === '志愿者名额已满') {
+        setRegisterModalOpen(false)
+        setRegisterActivityId(null)
+        message.error('手慢啦，名额已被抢完')
+      } else {
+        message.error(detail || '报名失败')
+      }
     } finally {
       setActionLoading(null)
     }
@@ -488,6 +510,22 @@ const ExplorePage = () => {
           </div>
         ) : null}
       </Modal>
+
+      {/* 报名弹窗 */}
+      <RegisterModal
+        open={registerModalOpen}
+        activityId={registerActivityId || 0}
+        activityTitle={selectedActivity?.title || ''}
+        onClose={() => {
+          setRegisterModalOpen(false)
+          setRegisterActivityId(null)
+        }}
+        onSuccess={() => {
+          setRegisterModalOpen(false)
+          setRegisterActivityId(null)
+          fetchActivities()
+        }}
+      />
     </div>
   )
 }
